@@ -493,12 +493,14 @@ def travel(g, from_star):
     out(" - ", w, " WEEK DELAY.", nl)
     d += 7 * w
   ship_days(g, d)
-  m = (g.ship.day - 1) // 30
+  m = int((g.ship.day - 1) / 30)
   out(
     "THE ETA AT ", g.ship.star.name, " IS ", MONTHS[m], " ",
     g.ship.day - 30 * m, ", ", g.ship.year, nl
   )
-  d = (rint(rnd() * 3) + 1) * (rnd() > g.delay / 2)
+  d = rint(rnd() * 3) + 1
+  if rnd() <= g.delay / 2:
+    d = 0
   ship_days(g, 7 * d)
   g.ship.status = d
 
@@ -539,7 +541,7 @@ def landing(g):
     if g.year >= g.end_year:
       return False
   g.day = d
-  m = (g.day - 1) // 30
+  m = int((g.day - 1) / 30)
   out(nl * 2, "*" * 17, nl, "* ", MONTHS[m], " %-5s, " % (g.day - 30 * m),
     g.year, nl)
   out("* ", g.ship.name, " HAS LANDED ON ", g.ship.star.name, nl)
