@@ -173,7 +173,7 @@ def make_star(g):
   return Record(
     goods = [0, 0, 0, 0, 0, 0],
     prices = [0, 0, 0, 0, 0, 0],
-    prod = [0, 0, 0, 0, 0, 0],
+    prods = [0, 0, 0, 0, 0, 0],
     x = 0,
     y = 0,
     level = COSMOPOLITAN,
@@ -205,7 +205,7 @@ def own_game(g):
   g.end_year = g.year + length
   g.max_weight = ask("WHAT'S THE MAX CARGOE TONNAGE(USUALLY 30) ",
     lambda n: n >= 25)
-  say("WHAT'S THE MINIMUM DISTANCE BETWEEN STARS ")
+  say("WHAT'S THE MINIMUM DISTANCE BETWEEN STARS")
   g.max_distance = ask("(MIN SPACING 10, MAX 25, USUALLY 15) ",
     in_range(10, 25))
   g.number_of_rounds = ask("HOW MANY BIDS OR OFFERS(USUALLY 3) ",
@@ -353,23 +353,23 @@ def update_prices(g, star):
   if star.level >= DEVELOPED:
     level += 1
   months = 12 * (g.year - star.year) + (g.day - star.day) / 30
-  prod = star.prod
+  goods, prods, prices = star.goods, star.prods, star.prices
   for i in range(6):
     k, b = ECONOMIC[i][level]
-    prod[i] = k * star.level + b
-    prod[i] *= 1 + star.level / 15
-    if abs(prod[i]) <= 0.01:
-      g.prices[i] = 0
+    prods[i] = k * star.level + b
+    prods[i] *= 1 + star.level / 15
+    if abs(prods[i]) <= 0.01:
+      prices[i] = 0
     else:
-      star.goods[i] = sgn(prod[i]) * min(abs(
-        prod[i] * 12), abs(star.goods[i] + months * prod[i]))
-      star.prices[i] = PRICES[i] * (1 - sgn(star.goods[i]) * abs(
-        star.goods[i] / (prod[i] * g.margin)))
-      star.prices[i] = 100 * rint(star.prices[i] / 100 + 0.5)
+      goods[i] = sgn(prods[i]) * min(abs(
+        prods[i] * 12), abs(goods[i] + months * prods[i]))
+      prices[i] = PRICES[i] * (1 - sgn(goods[i]) * abs(
+        goods[i] / (prods[i] * g.margin)))
+      prices[i] = 100 * rint(prices[i] / 100 + 0.5)
   star.day = g.day
   star.year = g.year
 
-def star_level(g, star):
+def text_level(g, star):
   level = int(star.level / 5)
   if level == 0:
     return "IV"
@@ -404,7 +404,7 @@ def report(g):
       prices[j] = sgn(g.stars[i].goods[j]) * prices[j]
     say("%4s %5s  %5s %5s %5s %5s %5s %5s\n" % (
       g.stars[i].name,
-      star_level(g, g.stars[i]),
+      text_level(g, g.stars[i]),
       price_col(prices[0]),
       price_col(prices[1]),
       price_col(prices[2]),
@@ -417,14 +417,13 @@ def report(g):
   say("\n('+' MEANS SELLING AND '-' MEANS BUYING)\n")
   say("\n%sCAPTAINS\n\n" % (" " * 22))
   say("NUMBER  $ ON SHIPS   $ IN BANK     CARGOES      TOTALS\n")
-  for p in range(g.number_of_players):
-    update_account(g, g.accounts[p])
+  for account in g.accounts:
+    update_account(g, account)
   for p in range(g.number_of_players):
     say("\n")
     on_ships = 0
     cargoes = 0
-    for i in range(len(g.ships)):
-      ship = g.ships[i]
+    for ship in g.ships:
       if ship.player == p:
         on_ships += ship.sum
         for j in range(6):
@@ -440,14 +439,13 @@ def get_names(objects):
 
 def ship_days(g, d):
   g.ship.day += d
-  if g.ship.day > 360:
+  while g.ship.day > 360:
     g.ship.day -= 360
     g.ship.year += 1
 
 def travel(g, from_star):
-  d = distance(
-    from_star.x, from_star.y, g.ship.star.x, g.ship.star.y) / g.speed
-  d = rint(d)
+  d = rint(distance(
+    from_star.x, from_star.y, g.ship.star.x, g.ship.star.y) / g.speed)
   if rnd() <= g.delay / 2:
     w = 1 + rint(rnd() * 3)
     if w == 1:
@@ -488,26 +486,24 @@ def next_eta(g):
    say("\n")
 
 def landing(g):
-  d = g.ships[0].day
-  y = g.ships[0].year
+  d, y = g.ships[0].day, g.ships[0].year
   ship_index = 0
   for i in range(1, len(g.ships)):
-    if g.ships[i].year > y or g.ships[i].day > d:
+    if g.ships[i].day > d or g.ships[i].year > y:
       pass
     elif g.ships[i].day == d and rnd() > 0.5:
       pass
     else:
-      d = g.ships[i].day
-      y = g.ships[i].year
+      d, y = g.ships[i].day, g.ships[i].year
       ship_index = i
   g.ship = g.ships[ship_index]
-  if g.year != y:
+  if g.year < g.ship.year:
     g.day = 1
-    g.year = y
+    g.year = g.ship.year
     report(g)
     if g.year >= g.end_year:
       return False
-  g.day = d
+  g.day = g.ship.day
   m = int((g.day - 1) / 30)
   say("\n%s\n* %s %s, %d\n" % ("*" * 17, MONTHS[m], (g.day - 30 * m), g.year))
   say("* %s HAS LANDED ON %s\n" % (g.ship.name, g.ship.star.name))
@@ -529,7 +525,6 @@ def landing(g):
     g.ship.goods[5],
     g.ship.weight
   ))
-  update_prices(g, g.ship.star)
   return True
 
 def price_window(g, index, units, current_round):
@@ -631,7 +626,7 @@ def sell(g):
   say("\nWE ARE SELLING:\n")
   for i in range(6):
     star_units = rint(g.ship.star.goods[i])
-    if g.ship.star.prod[i] <= 0 or g.ship.star.goods[i] < 1:
+    if g.ship.star.prods[i] <= 0 or g.ship.star.goods[i] < 1:
       pass
     elif i <= 3 and g.ship.weight >= g.max_weight:
       pass
@@ -649,7 +644,6 @@ def sell(g):
           say(" TONS PUTS YOU OVER\n")
           say("     THE %d TON LIMIT.\n" % g.max_weight)
           say("     ")
-  say("\n")
 
 def bank_call(g):
   say("DO YOU WISH TO VISIT THE LOCAL BANK ")
@@ -660,7 +654,7 @@ def bank_call(g):
   update_account(g, account)
   say("     YOU HAVE $ %d IN THE BANK\n" % account.sum)
   say("     AND $ %d ON YOUR SHIP\n" % g.ship.sum)
-  if account.sum != 0:
+  if account.sum >= 0:
     x = ask("     HOW MUCH DO YOU WISH TO WITHDRAW ",
       in_range(0, account.sum))
     account.sum -= x
@@ -675,7 +669,7 @@ def update_class(g, star):
   for i in range(6):
     if star.goods[i] >= 0:
       pass
-    elif star.goods[i] < star.prod[i]:
+    elif star.goods[i] < star.prods[i]:
       return False
     else:
       n += 1
@@ -685,15 +679,15 @@ def update_class(g, star):
   if star.level in (UNDERDEVELOPED, DEVELOPED, COSMOPOLITAN):
     ga()
     say("STAR SYSTEM %s IS NOW A CLASS %s SYSTEM\n" % (
-      star.name, star_level(star)))
+      star.name, text_level(star)))
   return True
 
 def new_star(g):
   if len(g.stars) == 15:
     return
   n = 0
-  for i in range(len(g.stars)):
-    n += g.stars[i].level
+  for star in g.stars:
+    n += star.level
   if n / len(g.stars) < 10:
     return
   g.stars.append(make_star(g))
@@ -710,22 +704,21 @@ def start(g):
   star_map(g)
   report(g)
   say(ADVICE)
-  ship_index = 0
-  for i in range(len(g.ships)):
+  for ship in g.ships:
     say("\nPLAYER %d, WHICH STAR WILL %s TRAVEL TO " % (
-      g.ships[i].player + 1, g.ships[ship_index].name))
-    g.ship = g.ships[ship_index]
+      ship.player + 1, ship.name))
+    g.ship = ship
     g.ship.star = g.stars[0]
     next_eta(g)
-    ship_index += 1
   while landing(g):
     star = g.ship.star
     account = g.accounts[g.ship.player]
+    update_prices(g, star)
     buy(g)
     sell(g)
     if star.level >= DEVELOPED and g.ship.sum + account.sum != 0:
       bank_call(g)
-    say("WHAT IS YOUR NEXT PORT OF CALL ")
+    say("\nWHAT IS YOUR NEXT PORT OF CALL ")
     next_eta(g)
     if update_class(g, star):
       new_star(g)
