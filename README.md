@@ -1,7 +1,7 @@
 # Star Trader
 
 The original game was written by Dave Kaufman in BASIC and published by the "People's Computer Company" newsletter in 1974.
-Here is a Python version of the game.
+Here is a Python version of the game (work in progress, there could still be bugs!).
 
 ![Star Trader screenshot](star_trader.png)
 
