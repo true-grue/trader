@@ -3,6 +3,8 @@
 The original game was written by Dave Kaufman in BASIC and published by the "People's Computer Company" newsletter in 1974.
 Here is a Python version of the game.
 
+![Star Trader screenshot](star_trader.png)
+
 The game was reprinted in the 1977, in the wonderful book "What to Do After You Hit Return".
 I think this book still has a huge education potential.
 BASIC games like "Star Trader" from the book are quite complex.
