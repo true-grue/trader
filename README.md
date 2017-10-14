@@ -5,7 +5,7 @@ Here is a Python version of the game (work in progress, there could still be bug
 
 ![Star Trader screenshot](star_trader.png)
 
-The game was reprinted in the 1977, in the wonderful book "What to Do After You Hit Return".
+The game was reprinted in 1975, in the wonderful book "What to Do After You Hit Return".
 I think this book still has a huge education potential.
 BASIC games like "Star Trader" from the book are quite complex.
 They use lots of processes or algorithms instead of data (graphics, audo etc -- it was a game designer Chris Crawford, who introduced the concept of process intensity in the games).
